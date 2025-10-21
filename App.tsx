@@ -32,6 +32,92 @@ const SHIP_ASSETS = {
 const DECELERATION = 0.9;
 const BULLET_SPEED = 288; // Increased from 96 to 288 (3x faster)
 
+// Helper functions
+const getWavePattern = (waveTimer: number) => {
+  const wavePhase = Math.floor(waveTimer / 180) % 4;
+  
+  switch(wavePhase) {
+    case 0: return { spawnChance: 0.12, enemyCount: 3, enemyType: 'normal' };
+    case 1: return { spawnChance: 0.08, enemyCount: 2, enemyType: 'fast' };
+    case 2: return { spawnChance: 0.15, enemyCount: 4, enemyType: 'meteor' };
+    case 3: return { spawnChance: 0.18, enemyCount: 5, enemyType: 'mixed' };
+    default: return { spawnChance: 0.1, enemyCount: 2, enemyType: 'normal' };
+  }
+};
+
+const moveEnemy = (enemy: any) => {
+  const newAge = (enemy.age || 0) + 1;
+  const warpFactor = newAge < 10 ? Math.min(newAge / 10, 1) : 1;
+  
+  if (enemy.isMeteor) {
+    const speed = (enemy.meteorSpeed || 7) * 0.4;
+    return {
+      ...enemy,
+      y: enemy.y - speed * warpFactor,
+      age: newAge,
+      rotation: (enemy.rotation || 0) + (enemy.rotationSpeed || 1) * 0.3
+    };
+  } else {
+    const speed = (enemy.isFast ? 22 : 10) * 0.4;
+    return {
+      ...enemy,
+      y: enemy.y + speed * warpFactor,
+      age: newAge
+    };
+  }
+};
+
+const isEnemyOffScreen = (enemy: any, height: number) => {
+  if (enemy.isMeteor) {
+    return enemy.y <= -30; // ENEMY_SIZE
+  } else {
+    return enemy.y >= height;
+  }
+};
+
+const checkCollision = (x1: number, y1: number, size1: number, x2: number, y2: number, size2: number) => {
+  return x1 < x2 + size2 &&
+         x1 + size1 > x2 &&
+         y1 < y2 + size2 &&
+         y1 + size1 > y2;
+};
+
+const handleShipNavigation = (keyCode: number, selectedShip: any, setSelectedShip: any, shipSelectedRef: any, setShipSelected: any, setShowShipSelector: any) => {
+  if (keyCode === 22) { // Right -> Up (ship type)
+    setSelectedShip((current: any) => {
+      const types = [1, 2, 3];
+      const currentTypeIndex = types.indexOf(current.type);
+      const newTypeIndex = currentTypeIndex === 0 ? types.length - 1 : currentTypeIndex - 1;
+      return { type: types[newTypeIndex], color: current.color };
+    });
+  } else if (keyCode === 21) { // Left -> Down (ship type)
+    setSelectedShip((current: any) => {
+      const types = [1, 2, 3];
+      const currentTypeIndex = types.indexOf(current.type);
+      const newTypeIndex = currentTypeIndex === types.length - 1 ? 0 : currentTypeIndex + 1;
+      return { type: types[newTypeIndex], color: current.color };
+    });
+  } else if (keyCode === 19) { // Up -> Left (color)
+    setSelectedShip((current: any) => {
+      const colors = ['blue', 'green', 'orange', 'red'];
+      const currentColorIndex = colors.indexOf(current.color);
+      const newColorIndex = currentColorIndex === 0 ? colors.length - 1 : currentColorIndex - 1;
+      return { type: current.type, color: colors[newColorIndex] };
+    });
+  } else if (keyCode === 20) { // Down -> Right (color)
+    setSelectedShip((current: any) => {
+      const colors = ['blue', 'green', 'orange', 'red'];
+      const currentColorIndex = colors.indexOf(current.color);
+      const newColorIndex = currentColorIndex === colors.length - 1 ? 0 : currentColorIndex + 1;
+      return { type: current.type, color: colors[newColorIndex] };
+    });
+  } else if (keyCode === 23) { // Center - Select ship
+    shipSelectedRef.current = true;
+    setShipSelected(true);
+    setShowShipSelector(false);
+  }
+};
+
 export default function App() {
   const [playerPos, setPlayerPos] = useState({
     x: width / 2 - PLAYER_SIZE / 2,
@@ -160,39 +246,11 @@ export default function App() {
         
         setEnemies(prev => {
           const currentEnemies = [...prev];
+          const pattern = getWavePattern(waveTimer);
           
-          // Wave patterns based on timer
-          const wavePhase = Math.floor(waveTimer / 180) % 4; // Change wave every 3 seconds
-          let spawnChance = 0.1;
-          let enemyCount = 2;
-          let enemyType = 'normal';
-          
-          switch(wavePhase) {
-            case 0: // Normal wave
-              spawnChance = 0.12;
-              enemyCount = 3;
-              enemyType = 'normal';
-              break;
-            case 1: // Fast wave  
-              spawnChance = 0.08;
-              enemyCount = 2;
-              enemyType = 'fast';
-              break;
-            case 2: // Meteor wave
-              spawnChance = 0.15;
-              enemyCount = 4;
-              enemyType = 'meteor';
-              break;
-            case 3: // Mixed chaos wave
-              spawnChance = 0.18;
-              enemyCount = 5;
-              enemyType = 'mixed';
-              break;
-          }
-          
-          if (Math.random() < spawnChance && currentEnemies.length < 35) {
+          if (Math.random() < pattern.spawnChance && currentEnemies.length < 35) {
             const newEnemies = [];
-            const numEnemies = Math.floor(Math.random() * 2) + enemyCount;
+            const numEnemies = Math.floor(Math.random() * 2) + pattern.enemyCount;
             const MIN_SPACING = ENEMY_SIZE + 15;
             
             for (let i = 0; i < numEnemies; i++) {
@@ -205,10 +263,10 @@ export default function App() {
                 
                 // Wave-based enemy type determination
                 let isMeteor = false;
-                if (enemyType === 'meteor') {
+                if (pattern.enemyType === 'meteor') {
                   isMeteor = true;
                   y = height;
-                } else if (enemyType === 'mixed') {
+                } else if (pattern.enemyType === 'mixed') {
                   isMeteor = Math.random() < 0.5;
                   y = isMeteor ? height : -ENEMY_SIZE;
                 } else {
@@ -229,7 +287,7 @@ export default function App() {
               }
               
               if (validPosition) {
-                const isFast = enemyType === 'fast' || (enemyType === 'mixed' && Math.random() < 0.4);
+                const isFast = pattern.enemyType === 'fast' || (pattern.enemyType === 'mixed' && Math.random() < 0.4);
                 const isMeteor = y === height;
                 
                 // Meteor-specific properties
@@ -277,37 +335,9 @@ export default function App() {
     if (gameStarted && !gameOver && !gameCleared && !enemyMoveRef.current) {
       enemyMoveRef.current = setInterval(() => {
         setEnemies(prev => {
-          return prev.map(enemy => {
-            const newAge = (enemy.age || 0) + 1;
-            // Warp-in effect: slower movement for first few frames
-            const warpFactor = newAge < 10 ? Math.min(newAge / 10, 1) : 1;
-            
-            if (enemy.isMeteor) {
-              // Meteors move upward with varying speeds and rotation
-              const speed = (enemy.meteorSpeed || 7) * 0.4; // Balanced speed
-              return {
-                ...enemy,
-                y: enemy.y - speed * warpFactor,
-                age: newAge,
-                rotation: (enemy.rotation || 0) + (enemy.rotationSpeed || 1) * 0.3
-              };
-            } else {
-              // Regular enemies move downward with smooth movement
-              const speed = (enemy.isFast ? 22 : 10) * 0.4; // Balanced speed
-              return {
-                ...enemy,
-                y: enemy.y + speed * warpFactor,
-                age: newAge
-              };
-            }
-          }).filter(enemy => {
-            // Remove enemies that go off screen
-            if (enemy.isMeteor) {
-              return enemy.y > -ENEMY_SIZE; // Meteors disappear at top
-            } else {
-              return enemy.y < height; // Regular enemies disappear at bottom
-            }
-          });
+          return prev
+            .map(moveEnemy)
+            .filter(enemy => !isEnemyOffScreen(enemy, height));
         });
       }, 16); // 60fps smooth movement
     }
@@ -407,39 +437,7 @@ export default function App() {
 
       // Ship selector navigation (rotated 90 degrees left like game controls)
       if (!shipSelectedRef.current) {
-        if (keyEvent.keyCode === 22) { // Right -> Up (ship type)
-          setSelectedShip(current => {
-            const types = [1, 2, 3];
-            const currentTypeIndex = types.indexOf(current.type);
-            const newTypeIndex = currentTypeIndex === 0 ? types.length - 1 : currentTypeIndex - 1;
-            return { type: types[newTypeIndex], color: current.color };
-          });
-        } else if (keyEvent.keyCode === 21) { // Left -> Down (ship type)
-          setSelectedShip(current => {
-            const types = [1, 2, 3];
-            const currentTypeIndex = types.indexOf(current.type);
-            const newTypeIndex = currentTypeIndex === types.length - 1 ? 0 : currentTypeIndex + 1;
-            return { type: types[newTypeIndex], color: current.color };
-          });
-        } else if (keyEvent.keyCode === 19) { // Up -> Left (color)
-          setSelectedShip(current => {
-            const colors = ['blue', 'green', 'orange', 'red'];
-            const currentColorIndex = colors.indexOf(current.color);
-            const newColorIndex = currentColorIndex === 0 ? colors.length - 1 : currentColorIndex - 1;
-            return { type: current.type, color: colors[newColorIndex] };
-          });
-        } else if (keyEvent.keyCode === 20) { // Down -> Right (color)
-          setSelectedShip(current => {
-            const colors = ['blue', 'green', 'orange', 'red'];
-            const currentColorIndex = colors.indexOf(current.color);
-            const newColorIndex = currentColorIndex === colors.length - 1 ? 0 : currentColorIndex + 1;
-            return { type: current.type, color: colors[newColorIndex] };
-          });
-        } else if (keyEvent.keyCode === 23) { // Center - Select ship
-          shipSelectedRef.current = true;
-          setShipSelected(true);
-          setShowShipSelector(false);
-        }
+        handleShipNavigation(keyEvent.keyCode, selectedShip, setSelectedShip, shipSelectedRef, setShipSelected, setShowShipSelector);
         return;
       }
 
