@@ -8,6 +8,27 @@ const ENEMY_SIZE = 30;
 const BULLET_SIZE = 16; // Increased from 8 to 16 (2x)
 const MAX_SPEED = 10; // Increased from 8 to 10
 const ACCELERATION = 0.2;
+
+const SHIP_ASSETS = {
+  1: {
+    blue: require('./assets/sprites/player/playerShip1_blue.png'),
+    green: require('./assets/sprites/player/playerShip1_green.png'),
+    orange: require('./assets/sprites/player/playerShip1_orange.png'),
+    red: require('./assets/sprites/player/playerShip1_red.png'),
+  },
+  2: {
+    blue: require('./assets/sprites/player/playerShip2_blue.png'),
+    green: require('./assets/sprites/player/playerShip2_green.png'),
+    orange: require('./assets/sprites/player/playerShip2_orange.png'),
+    red: require('./assets/sprites/player/playerShip2_red.png'),
+  },
+  3: {
+    blue: require('./assets/sprites/player/playerShip3_blue.png'),
+    green: require('./assets/sprites/player/playerShip3_green.png'),
+    orange: require('./assets/sprites/player/playerShip3_orange.png'),
+    red: require('./assets/sprites/player/playerShip3_red.png'),
+  },
+};
 const DECELERATION = 0.9;
 const BULLET_SPEED = 288; // Increased from 96 to 288 (3x faster)
 
@@ -25,6 +46,10 @@ export default function App() {
   const [gameCleared, setGameCleared] = useState(false);
   const [score, setScore] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false); // Track if game is flipped
+  const [selectedShip, setSelectedShip] = useState({ type: 1, color: 'blue' });
+  const [showShipSelector, setShowShipSelector] = useState(true);
+  const [shipSelected, setShipSelected] = useState(false);
+  const shipSelectedRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const enemyMoveRef = useRef<NodeJS.Timeout | null>(null);
   const bulletMoveRef = useRef<NodeJS.Timeout | null>(null);
@@ -43,6 +68,9 @@ export default function App() {
     setEnemies([]);
     setBullets([]);
     setGameStarted(false);
+    setShipSelected(false);
+    shipSelectedRef.current = false;
+    setShowShipSelector(true);
     setTimeLeft(30);
     setGameOver(false);
     setGameCleared(false);
@@ -324,7 +352,7 @@ export default function App() {
   // Update position ref
   useEffect(() => {
     playerPosRef.current = playerPos;
-  }, [playerPos]);
+  }, [playerPos, gameStarted, gameOver, gameCleared, shipSelected]);
 
   useEffect(() => {
     const handleKeyDown = (keyEvent: { keyCode: number }) => {
@@ -336,7 +364,49 @@ export default function App() {
         return;
       }
 
+      // Ship selector navigation (rotated 90 degrees left like game controls)
+      if (!shipSelectedRef.current) {
+        if (keyEvent.keyCode === 22) { // Right -> Up (ship type)
+          setSelectedShip(current => {
+            const types = [1, 2, 3];
+            const currentTypeIndex = types.indexOf(current.type);
+            const newTypeIndex = currentTypeIndex === 0 ? types.length - 1 : currentTypeIndex - 1;
+            return { type: types[newTypeIndex], color: current.color };
+          });
+        } else if (keyEvent.keyCode === 21) { // Left -> Down (ship type)
+          setSelectedShip(current => {
+            const types = [1, 2, 3];
+            const currentTypeIndex = types.indexOf(current.type);
+            const newTypeIndex = currentTypeIndex === types.length - 1 ? 0 : currentTypeIndex + 1;
+            return { type: types[newTypeIndex], color: current.color };
+          });
+        } else if (keyEvent.keyCode === 19) { // Up -> Left (color)
+          setSelectedShip(current => {
+            const colors = ['blue', 'green', 'orange', 'red'];
+            const currentColorIndex = colors.indexOf(current.color);
+            const newColorIndex = currentColorIndex === 0 ? colors.length - 1 : currentColorIndex - 1;
+            return { type: current.type, color: colors[newColorIndex] };
+          });
+        } else if (keyEvent.keyCode === 20) { // Down -> Right (color)
+          setSelectedShip(current => {
+            const colors = ['blue', 'green', 'orange', 'red'];
+            const currentColorIndex = colors.indexOf(current.color);
+            const newColorIndex = currentColorIndex === colors.length - 1 ? 0 : currentColorIndex + 1;
+            return { type: current.type, color: colors[newColorIndex] };
+          });
+        } else if (keyEvent.keyCode === 23) { // Center - Select ship
+          shipSelectedRef.current = true;
+          setShipSelected(true);
+          setShowShipSelector(false);
+        }
+        return;
+      }
+
       keysPressed.current.add(keyEvent.keyCode);
+      
+      if (!gameStarted) {
+        setGameStarted(true);
+      }
       
       if (!gameStarted) {
         setGameStarted(true);
@@ -457,10 +527,40 @@ export default function App() {
       style={styles.container}
       resizeMode="repeat"
     >
-      <Text style={styles.timer}>{timeLeft}s</Text>
-      <Text style={styles.scoreCounter}>Score: {score}</Text>
+      {shipSelected && <Text style={styles.timer}>{timeLeft}s</Text>}
+      {shipSelected && <Text style={styles.scoreCounter}>Score: {score}</Text>}
       
-      {!gameStarted && (
+      {!gameStarted && !shipSelected && showShipSelector && (
+        <View style={styles.shipSelectorContainer}>
+          <Text style={styles.shipSelectorTitle}>Choose Your Ship</Text>
+          <View style={styles.shipGrid}>
+            {[1, 2, 3].map(type => (
+              <View key={type} style={styles.shipTypeRow}>
+                {['blue', 'green', 'orange', 'red'].map(color => (
+                  <View 
+                    key={`${type}-${color}`} 
+                    style={[
+                      styles.shipOption,
+                      selectedShip.type === type && selectedShip.color === color && styles.selectedShip
+                    ]}
+                  >
+                    <Image 
+                      source={SHIP_ASSETS[type][color]}
+                      style={styles.shipPreview}
+                    />
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
+      {!gameStarted && !shipSelected && (
+        <Text style={styles.rotateInstruction}>Rotate remote sideways</Text>
+      )}
+
+      {!gameStarted && shipSelected && (
         <View style={styles.instructionsContainer}>
           <Text style={styles.instructionsText}>↑↓←→ Move around</Text>
           <Text style={styles.instructionsText}>⏯ Shoot</Text>
@@ -485,17 +585,20 @@ export default function App() {
         </View>
       )}
       
-      <Image 
-        source={require('./assets/sprites/player/playerShip1_blue.png')}
-        style={[
-          styles.player,
-          {
-            left: playerPos.x,
-            top: playerPos.y,
-            transform: [{ scaleY: isFlipped ? -1 : 1 }], // Flip player sprite
-          }
-        ]}
-      />
+      {/* Player ship - only show after ship selection */}
+      {shipSelected && (
+        <Image 
+          source={SHIP_ASSETS[selectedShip.type][selectedShip.color]}
+          style={[
+            styles.player,
+            {
+              left: playerPos.x,
+              top: playerPos.y,
+              transform: [{ scaleY: isFlipped ? -1 : 1 }], // Flip player sprite
+            }
+          ]}
+        />
+      )}
       
       {enemies.map((enemy) => (
         <Image
@@ -616,6 +719,68 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 20,
+    textAlign: 'center',
+  },
+  shipSelectorContainer: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -200 }, { translateY: -150 }],
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    padding: 20,
+    borderRadius: 10,
+    width: 400,
+    height: 300,
+  },
+  shipSelectorTitle: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  shipGrid: {
+    flex: 1,
+    justifyContent: 'space-around',
+  },
+  shipTypeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+  },
+  shipOption: {
+    width: 60,
+    height: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  selectedShip: {
+    borderColor: '#00ff00',
+    backgroundColor: 'rgba(0, 255, 0, 0.2)',
+  },
+  shipPreview: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
+  },
+  shipSelectorInstructions: {
+    color: '#fff',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  rotateInstruction: {
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+    color: '#00ff00',
+    fontSize: 20,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
   player: {
