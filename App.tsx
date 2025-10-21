@@ -188,29 +188,9 @@ export default function App() {
           return currentEnemies;
         });
 
-        // Handle bullet collisions
+        // No bullet collision handling here - moved to separate loop
         setBullets(prevBullets => {
-          setEnemies(prevEnemies => {
-            const hitEnemyIds = new Set<number>();
-            const hitBulletIds = new Set<number>();
-
-            // No collision detection here - moved to bullet loop
-            
-            // Update score
-            let totalScore = 0;
-            hitEnemyIds.forEach(enemyId => {
-              const enemy = prevEnemies.find(e => e.id === enemyId);
-              if (enemy) {
-                totalScore += enemy.isFast ? 5 : 1; // Fast enemies worth 5 points
-              }
-            });
-            
-            setScore(prev => prev + totalScore);
-
-            return prevEnemies.filter(enemy => !hitEnemyIds.has(enemy.id));
-          });
-
-          return prevBullets; // This will be overridden by setBullets above
+          return prevBullets; // No changes to bullets in this loop
         });
       }, 200); // Slower spawn/collision loop
     }
@@ -275,19 +255,36 @@ export default function App() {
   useEffect(() => {
     if (gameStarted && !gameOver && !gameCleared && !bulletMoveRef.current) {
       bulletMoveRef.current = setInterval(() => {
-        setBullets(prev => {
-          // Move bullets first
-          const movedBullets = prev.map(bullet => ({
+        setBullets(prevBullets => {
+          // Just move bullets, collision detection handled separately
+          return prevBullets.map(bullet => ({
             ...bullet,
-            y: bullet.y + (BULLET_SPEED * bullet.direction * 0.08) // Smooth per-frame movement
+            y: bullet.y + (BULLET_SPEED * bullet.direction * 0.08)
           })).filter(bullet => bullet.direction === 1 ? bullet.y < height + BULLET_SIZE : bullet.y > -BULLET_SIZE);
+        });
+      }, 16); // 60fps smooth movement
+    }
 
-          // Check collisions with current enemy positions
+    return () => {
+      if (bulletMoveRef.current) {
+        clearInterval(bulletMoveRef.current);
+        bulletMoveRef.current = null;
+      }
+    };
+  }, [gameStarted, gameOver, gameCleared]);
+
+  // Separate collision detection loop to avoid state conflicts
+  useEffect(() => {
+    if (gameStarted && !gameOver && !gameCleared) {
+      const collisionInterval = setInterval(() => {
+        let hitBulletIds = new Set<number>();
+        
+        setBullets(prevBullets => {
           setEnemies(prevEnemies => {
             const hitEnemyIds = new Set<number>();
-            const hitBulletIds = new Set<number>();
+            hitBulletIds = new Set<number>(); // Reset for this collision check
 
-            movedBullets.forEach(bullet => {
+            prevBullets.forEach(bullet => {
               prevEnemies.forEach(enemy => {
                 // Simple overlap collision detection
                 if (bullet.x < enemy.x + ENEMY_SIZE &&
@@ -312,24 +309,16 @@ export default function App() {
               setScore(prev => prev + totalScore);
             }
 
-            // Remove hit bullets from moved bullets
-            const survivingBullets = movedBullets.filter(bullet => !hitBulletIds.has(bullet.id));
-            setBullets(survivingBullets);
-
             return prevEnemies.filter(enemy => !hitEnemyIds.has(enemy.id));
           });
 
-          return movedBullets; // This gets overridden by setBullets above but needed for the filter
+          // Return bullets with hits removed
+          return prevBullets.filter(bullet => !hitBulletIds.has(bullet.id));
         });
-      }, 16); // 60fps smooth movement
-    }
+      }, 32); // 30fps collision detection
 
-    return () => {
-      if (bulletMoveRef.current) {
-        clearInterval(bulletMoveRef.current);
-        bulletMoveRef.current = null;
-      }
-    };
+      return () => clearInterval(collisionInterval);
+    }
   }, [gameStarted, gameOver, gameCleared]);
 
   // Update position ref
@@ -356,28 +345,25 @@ export default function App() {
       // Start continuous shooting on play/pause button (keyCode 85)
       if (keyEvent.keyCode === 85 && !shootInterval.current) {
         // Shoot immediately from tip of sprite
-        const bulletX = playerPosRef.current.x + PLAYER_SIZE / 2 - (BULLET_SIZE * 2) / 2; // Account for bullet width being 2x
-        const bulletY = isFlipped ? playerPosRef.current.y + PLAYER_SIZE : playerPosRef.current.y - BULLET_SIZE;
-        const bulletDirection = isFlipped ? 1 : -1; // Flipped = down (+1), Normal = up (-1)
-        setBullets(prev => [...prev, {
-          x: bulletX,
-          y: bulletY,
-          id: nextId.current++,
-          direction: bulletDirection
-        }]);
-
-        // Start continuous shooting
-        shootInterval.current = setInterval(() => {
-          const bulletX = playerPosRef.current.x + PLAYER_SIZE / 2 - (BULLET_SIZE * 2) / 2; // Account for bullet width being 2x
+        const createBullet = () => {
+          const bulletX = playerPosRef.current.x + PLAYER_SIZE / 2 - (BULLET_SIZE * 2) / 2;
           const bulletY = isFlipped ? playerPosRef.current.y + PLAYER_SIZE : playerPosRef.current.y - BULLET_SIZE;
-          const bulletDirection = isFlipped ? 1 : -1; // Flipped = down (+1), Normal = up (-1)
-          setBullets(prev => [...prev, {
+          const bulletDirection = isFlipped ? 1 : -1;
+          
+          setBullets(prevBullets => [...prevBullets, {
             x: bulletX,
             y: bulletY,
             id: nextId.current++,
             direction: bulletDirection
           }]);
-        }, 150);
+        };
+
+        createBullet(); // Shoot immediately
+
+        // Start continuous shooting with functional updates
+        shootInterval.current = setInterval(() => {
+          createBullet();
+        }, 100); // Reduced from 150ms to 100ms for more consistent stream
       }
 
       // Flip game on rewind button (keyCode 89)
