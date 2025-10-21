@@ -9,7 +9,7 @@ const BULLET_SIZE = 16; // Increased from 8 to 16 (2x)
 const MAX_SPEED = 10; // Increased from 8 to 10
 const ACCELERATION = 0.2;
 const DECELERATION = 0.9;
-const BULLET_SPEED = 96; // Increased from 80 to compensate for slower loop
+const BULLET_SPEED = 288; // Increased from 96 to 288 (3x faster)
 
 export default function App() {
   const [playerPos, setPlayerPos] = useState({
@@ -355,11 +355,12 @@ export default function App() {
 
       // Start continuous shooting on play/pause button (keyCode 85)
       if (keyEvent.keyCode === 85 && !shootInterval.current) {
-        // Shoot immediately from correct end of sprite with current direction
-        const bulletY = isFlipped ? playerPosRef.current.y + PLAYER_SIZE : playerPosRef.current.y;
+        // Shoot immediately from tip of sprite
+        const bulletX = playerPosRef.current.x + PLAYER_SIZE / 2 - (BULLET_SIZE * 2) / 2; // Account for bullet width being 2x
+        const bulletY = isFlipped ? playerPosRef.current.y + PLAYER_SIZE : playerPosRef.current.y - BULLET_SIZE;
         const bulletDirection = isFlipped ? 1 : -1; // Flipped = down (+1), Normal = up (-1)
         setBullets(prev => [...prev, {
-          x: playerPosRef.current.x + PLAYER_SIZE / 2 - BULLET_SIZE / 2,
+          x: bulletX,
           y: bulletY,
           id: nextId.current++,
           direction: bulletDirection
@@ -367,10 +368,11 @@ export default function App() {
 
         // Start continuous shooting
         shootInterval.current = setInterval(() => {
-          const bulletY = isFlipped ? playerPosRef.current.y + PLAYER_SIZE : playerPosRef.current.y;
+          const bulletX = playerPosRef.current.x + PLAYER_SIZE / 2 - (BULLET_SIZE * 2) / 2; // Account for bullet width being 2x
+          const bulletY = isFlipped ? playerPosRef.current.y + PLAYER_SIZE : playerPosRef.current.y - BULLET_SIZE;
           const bulletDirection = isFlipped ? 1 : -1; // Flipped = down (+1), Normal = up (-1)
           setBullets(prev => [...prev, {
-            x: playerPosRef.current.x + PLAYER_SIZE / 2 - BULLET_SIZE / 2,
+            x: bulletX,
             y: bulletY,
             id: nextId.current++,
             direction: bulletDirection
@@ -538,6 +540,7 @@ export default function App() {
             {
               left: bullet.x,
               top: bullet.y,
+              transform: bullet.direction === 1 ? [{ rotate: '180deg' }] : undefined
             }
           ]}
         />
