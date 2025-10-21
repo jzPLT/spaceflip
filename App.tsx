@@ -50,6 +50,8 @@ export default function App() {
   const [showShipSelector, setShowShipSelector] = useState(true);
   const [shipSelected, setShipSelected] = useState(false);
   const shipSelectedRef = useRef(false);
+  const [waveTimer, setWaveTimer] = useState(0);
+  const [currentWave, setCurrentWave] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const enemyMoveRef = useRef<NodeJS.Timeout | null>(null);
   const bulletMoveRef = useRef<NodeJS.Timeout | null>(null);
@@ -153,13 +155,44 @@ export default function App() {
     if (gameStarted && !gameOver && !gameCleared && !intervalRef.current) {
       // Main game loop for spawning and collision detection
       intervalRef.current = setInterval(() => {
-        // Spawn new enemies
+        // Wave-based enemy spawning
+        setWaveTimer(prev => prev + 1);
+        
         setEnemies(prev => {
           const currentEnemies = [...prev];
           
-          if (Math.random() < 0.08 && currentEnemies.length < 25) {
+          // Wave patterns based on timer
+          const wavePhase = Math.floor(waveTimer / 180) % 4; // Change wave every 3 seconds
+          let spawnChance = 0.1;
+          let enemyCount = 2;
+          let enemyType = 'normal';
+          
+          switch(wavePhase) {
+            case 0: // Normal wave
+              spawnChance = 0.12;
+              enemyCount = 3;
+              enemyType = 'normal';
+              break;
+            case 1: // Fast wave  
+              spawnChance = 0.08;
+              enemyCount = 2;
+              enemyType = 'fast';
+              break;
+            case 2: // Meteor wave
+              spawnChance = 0.15;
+              enemyCount = 4;
+              enemyType = 'meteor';
+              break;
+            case 3: // Mixed chaos wave
+              spawnChance = 0.18;
+              enemyCount = 5;
+              enemyType = 'mixed';
+              break;
+          }
+          
+          if (Math.random() < spawnChance && currentEnemies.length < 35) {
             const newEnemies = [];
-            const numEnemies = Math.floor(Math.random() * 3) + 1;
+            const numEnemies = Math.floor(Math.random() * 2) + enemyCount;
             const MIN_SPACING = ENEMY_SIZE + 15;
             
             for (let i = 0; i < numEnemies; i++) {
@@ -170,9 +203,17 @@ export default function App() {
               while (!validPosition && attempts < 100) {
                 x = Math.random() * (width - ENEMY_SIZE);
                 
-                // 30% chance for meteor (spawns from bottom)
-                const isMeteor = Math.random() < 0.3;
-                y = isMeteor ? height : -ENEMY_SIZE;
+                // Wave-based enemy type determination
+                let isMeteor = false;
+                if (enemyType === 'meteor') {
+                  isMeteor = true;
+                  y = height;
+                } else if (enemyType === 'mixed') {
+                  isMeteor = Math.random() < 0.5;
+                  y = isMeteor ? height : -ENEMY_SIZE;
+                } else {
+                  y = -ENEMY_SIZE;
+                }
                 
                 const allEnemies = [...currentEnemies, ...newEnemies];
                 validPosition = true;
@@ -188,8 +229,8 @@ export default function App() {
               }
               
               if (validPosition) {
-                const isFast = Math.random() < 0.15;
-                const isMeteor = y === height; // Meteor if spawned from bottom
+                const isFast = enemyType === 'fast' || (enemyType === 'mixed' && Math.random() < 0.4);
+                const isMeteor = y === height;
                 
                 // Meteor-specific properties
                 const rotation = isMeteor ? Math.random() * 360 : 0;
@@ -243,7 +284,7 @@ export default function App() {
             
             if (enemy.isMeteor) {
               // Meteors move upward with varying speeds and rotation
-              const speed = (enemy.meteorSpeed || 5) * 0.3; // Reduced per-frame speed
+              const speed = (enemy.meteorSpeed || 7) * 0.4; // Balanced speed
               return {
                 ...enemy,
                 y: enemy.y - speed * warpFactor,
@@ -252,7 +293,7 @@ export default function App() {
               };
             } else {
               // Regular enemies move downward with smooth movement
-              const speed = (enemy.isFast ? 18 : 6) * 0.3; // Reduced per-frame speed
+              const speed = (enemy.isFast ? 22 : 10) * 0.4; // Balanced speed
               return {
                 ...enemy,
                 y: enemy.y + speed * warpFactor,
