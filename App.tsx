@@ -31,6 +31,7 @@ export default function App() {
     gameCleared: gameState.gameCleared,
     isFlipped: gameState.isFlipped,
     selectedShip: gameState.selectedShip,
+    isPaidUser: gameState.isPaidUser,
     shipSelectedRef: gameState.shipSelectedRef,
     playerPosRef: gameState.playerPosRef,
     velocity: gameState.velocity,
@@ -70,6 +71,7 @@ export default function App() {
       <ShipSelector 
         selectedShip={gameState.selectedShip}
         visible={!gameState.gameStarted && !gameState.shipSelected && gameState.showShipSelector}
+        isPaidUser={gameState.isPaidUser}
       />
 
       {!gameState.gameStarted && !gameState.shipSelected && (

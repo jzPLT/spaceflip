@@ -49,7 +49,8 @@ export const handleShipNavigation = (
   setSelectedShip: (ship: Ship | ((prev: Ship) => Ship)) => void,
   shipSelectedRef: React.RefObject<boolean>,
   setShipSelected: (selected: boolean) => void,
-  setShowShipSelector: (show: boolean) => void
+  setShowShipSelector: (show: boolean) => void,
+  isPaidUser: boolean = false
 ): void => {
   if (keyCode === KEY_CODES.RIGHT) { // Right -> Up (ship type)
     setSelectedShip((current: Ship) => {
@@ -80,6 +81,13 @@ export const handleShipNavigation = (
       return { type: current.type, color: colors[newColorIndex] };
     });
   } else if (keyCode === KEY_CODES.CENTER) { // Center - Select ship
+    // Check if selecting locked content
+    if (selectedShip.color === 'red' && !isPaidUser) {
+      // TODO: Trigger payment flow here
+      console.log('Payment flow would start here for red ship');
+      return;
+    }
+    
     shipSelectedRef.current = true;
     setShipSelected(true);
     setShowShipSelector(false);

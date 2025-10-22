@@ -2,13 +2,15 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ship } from '../types';
 import { SHIP_ASSETS } from '../assets';
+import { LockOverlay } from './LockOverlay';
 
 interface ShipSelectorProps {
   selectedShip: Ship;
   visible: boolean;
+  isPaidUser: boolean;
 }
 
-export const ShipSelector: React.FC<ShipSelectorProps> = ({ selectedShip, visible }) => {
+export const ShipSelector: React.FC<ShipSelectorProps> = ({ selectedShip, visible, isPaidUser }) => {
   if (!visible) return null;
 
   return (
@@ -17,20 +19,24 @@ export const ShipSelector: React.FC<ShipSelectorProps> = ({ selectedShip, visibl
       <View style={styles.grid}>
         {[1, 2, 3].map(type => (
           <View key={type} style={styles.typeRow}>
-            {['blue', 'green', 'orange', 'red'].map(color => (
-              <View 
-                key={`${type}-${color}`} 
-                style={[
-                  styles.option,
-                  selectedShip.type === type && selectedShip.color === color && styles.selected
-                ]}
-              >
-                <Image 
-                  source={SHIP_ASSETS[type][color]}
-                  style={styles.preview as any}
-                />
-              </View>
-            ))}
+            {['blue', 'green', 'orange', 'red'].map(color => {
+              const isLocked = color === 'red' && !isPaidUser;
+              return (
+                <View 
+                  key={`${type}-${color}`} 
+                  style={[
+                    styles.option,
+                    selectedShip.type === type && selectedShip.color === color && styles.selected
+                  ]}
+                >
+                  <Image 
+                    source={SHIP_ASSETS[type][color]}
+                    style={styles.preview as any}
+                  />
+                  {isLocked && <LockOverlay />}
+                </View>
+              );
+            })}
           </View>
         ))}
       </View>
@@ -79,6 +85,7 @@ const styles = StyleSheet.create({
   selected: {
     borderColor: '#00ff00',
     backgroundColor: 'rgba(0, 255, 0, 0.2)',
+    zIndex: 2,
   },
   preview: {
     width: 40,

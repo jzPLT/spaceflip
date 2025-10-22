@@ -20,6 +20,7 @@ export const useGameState = () => {
   const [showShipSelector, setShowShipSelector] = useState(true);
   const [shipSelected, setShipSelected] = useState(false);
   const [waveTimer, setWaveTimer] = useState(0);
+  const [isPaidUser, setIsPaidUser] = useState(false);
   
   const shipSelectedRef = useRef(false);
   const velocity = useRef<Velocity>({ x: 0, y: 0 });
@@ -61,6 +62,7 @@ export const useGameState = () => {
     showShipSelector, setShowShipSelector,
     shipSelected, setShipSelected,
     waveTimer, setWaveTimer,
+    isPaidUser, setIsPaidUser,
     
     // Refs
     shipSelectedRef,
