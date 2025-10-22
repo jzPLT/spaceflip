@@ -7,7 +7,7 @@ interface UseCollisionDetectionProps {
   playerPos: Position;
   enemies: Enemy[];
   resetGame: () => void;
-  playerPosRef: React.MutableRefObject<Position>;
+  playerPosRef: React.RefObject<Position>;
 }
 
 export const useCollisionDetection = ({

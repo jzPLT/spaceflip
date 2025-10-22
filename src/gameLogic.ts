@@ -47,7 +47,7 @@ export const handleShipNavigation = (
   keyCode: number, 
   selectedShip: Ship, 
   setSelectedShip: (ship: Ship | ((prev: Ship) => Ship)) => void,
-  shipSelectedRef: React.MutableRefObject<boolean>,
+  shipSelectedRef: React.RefObject<boolean>,
   setShipSelected: (selected: boolean) => void,
   setShowShipSelector: (show: boolean) => void
 ): void => {
@@ -97,7 +97,7 @@ export const isBulletOffScreen = (bullet: Bullet): boolean => {
   return bullet.y < -GAME_CONSTANTS.BULLET_SIZE || bullet.y > GAME_CONSTANTS.SCREEN_HEIGHT;
 };
 
-export const createBullet = (playerPos: Position, isFlipped: boolean, nextId: React.MutableRefObject<number>): Bullet => {
+export const createBullet = (playerPos: Position, isFlipped: boolean, nextId: React.RefObject<number>): Bullet => {
   const bulletX = playerPos.x + GAME_CONSTANTS.PLAYER_SIZE / 2 - (GAME_CONSTANTS.BULLET_SIZE * 2) / 2;
   const bulletY = isFlipped ? playerPos.y + GAME_CONSTANTS.PLAYER_SIZE : playerPos.y - GAME_CONSTANTS.BULLET_SIZE;
   const bulletDirection = isFlipped ? 1 : -1;
@@ -152,7 +152,7 @@ export const updatePlayerPosition = (
   return { position: newPos, velocity: newVelocity };
 };
 
-export const createEnemies = (currentEnemies: Enemy[], pattern: WavePattern, nextId: React.MutableRefObject<number>): Enemy[] => {
+export const createEnemies = (currentEnemies: Enemy[], pattern: WavePattern, nextId: React.RefObject<number>): Enemy[] => {
   if (Math.random() >= pattern.spawnChance || currentEnemies.length >= GAME_CONSTANTS.MAX_ENEMIES) {
     return [];
   }

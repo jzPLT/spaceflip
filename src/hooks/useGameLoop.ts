@@ -13,7 +13,7 @@ interface UseGameLoopProps {
   setEnemies: (fn: (prev: Enemy[]) => Enemy[]) => void;
   setBullets: (fn: (prev: Bullet[]) => Bullet[]) => void;
   setScore: (fn: (prev: number) => number) => void;
-  nextId: React.MutableRefObject<number>;
+  nextId: React.RefObject<number>;
 }
 
 export const useGameLoop = ({

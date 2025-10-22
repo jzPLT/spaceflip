@@ -10,10 +10,10 @@ interface UseKeyboardInputProps {
   gameCleared: boolean;
   isFlipped: boolean;
   selectedShip: Ship;
-  shipSelectedRef: React.MutableRefObject<boolean>;
-  playerPosRef: React.MutableRefObject<Position>;
-  velocity: React.MutableRefObject<{ x: number; y: number }>;
-  nextId: React.MutableRefObject<number>;
+  shipSelectedRef: React.RefObject<boolean>;
+  playerPosRef: React.RefObject<Position>;
+  velocity: React.RefObject<{ x: number; y: number }>;
+  nextId: React.RefObject<number>;
   resetGame: () => void;
   setSelectedShip: (ship: Ship | ((prev: Ship) => Ship)) => void;
   setShipSelected: (selected: boolean) => void;
