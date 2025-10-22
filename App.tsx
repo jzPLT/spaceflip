@@ -118,6 +118,34 @@ const handleShipNavigation = (keyCode: number, selectedShip: any, setSelectedShi
   }
 };
 
+const processBulletEnemyCollisions = (bullets: any[], enemies: any[], setBullets: any, setEnemies: any, setScore: any) => {
+  const hitBulletIds = new Set();
+  const hitEnemyIds = new Set();
+
+  bullets.forEach(bullet => {
+    enemies.forEach(enemy => {
+      if (!hitBulletIds.has(bullet.id) && !hitEnemyIds.has(enemy.id)) {
+        if (checkCollision(bullet.x, bullet.y, 16, enemy.x, enemy.y, 30)) { // BULLET_SIZE, ENEMY_SIZE
+          hitEnemyIds.add(enemy.id);
+          hitBulletIds.add(bullet.id);
+          
+          // Add score based on enemy type
+          const points = enemy.isFast ? 5 : 1;
+          setScore((prev: number) => prev + points);
+        }
+      }
+    });
+  });
+
+  // Remove hit bullets and enemies
+  if (hitBulletIds.size > 0) {
+    setBullets((prev: any[]) => prev.filter(bullet => !hitBulletIds.has(bullet.id)));
+  }
+  if (hitEnemyIds.size > 0) {
+    setEnemies((prev: any[]) => prev.filter(enemy => !hitEnemyIds.has(enemy.id)));
+  }
+};
+
 const moveBullet = (bullet: any) => {
   return {
     ...bullet,
