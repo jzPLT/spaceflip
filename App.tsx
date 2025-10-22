@@ -37,11 +37,11 @@ const getWavePattern = (waveTimer: number) => {
   const wavePhase = Math.floor(waveTimer / 180) % 4;
   
   switch(wavePhase) {
-    case 0: return { spawnChance: 0.12, enemyCount: 3, enemyType: 'normal' };
-    case 1: return { spawnChance: 0.08, enemyCount: 2, enemyType: 'fast' };
-    case 2: return { spawnChance: 0.15, enemyCount: 4, enemyType: 'meteor' };
-    case 3: return { spawnChance: 0.18, enemyCount: 5, enemyType: 'mixed' };
-    default: return { spawnChance: 0.1, enemyCount: 2, enemyType: 'normal' };
+    case 0: return { spawnChance: 0.15, enemyCount: 3, enemyType: 'normal' };
+    case 1: return { spawnChance: 0.15, enemyCount: 2, enemyType: 'fast' };
+    case 2: return { spawnChance: 0.18, enemyCount: 4, enemyType: 'meteor' };
+    case 3: return { spawnChance: 0.20, enemyCount: 5, enemyType: 'mixed' };
+    default: return { spawnChance: 0.15, enemyCount: 2, enemyType: 'normal' };
   }
 };
 
@@ -118,10 +118,10 @@ const handleShipNavigation = (keyCode: number, selectedShip: any, setSelectedShi
   }
 };
 
-const moveBullet = (bullet: any, direction: number) => {
+const moveBullet = (bullet: any) => {
   return {
     ...bullet,
-    y: bullet.y + (direction * BULLET_SPEED * 0.016) // 60fps
+    y: bullet.y + (BULLET_SPEED * bullet.direction * 0.08) // Match original speed
   };
 };
 
@@ -371,7 +371,7 @@ export default function App() {
               }
             }
             
-            currentEnemies.push(...newEnemies);
+            return [...currentEnemies, ...newEnemies];
           }
           
           return currentEnemies;
@@ -418,7 +418,7 @@ export default function App() {
       bulletMoveRef.current = setInterval(() => {
         setBullets(prevBullets => {
           return prevBullets
-            .map(bullet => moveBullet(bullet, bullet.direction))
+            .map(moveBullet)
             .filter(bullet => !isBulletOffScreen(bullet, height));
         });
       }, 16); // 60fps smooth movement
