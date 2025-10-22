@@ -118,6 +118,68 @@ const handleShipNavigation = (keyCode: number, selectedShip: any, setSelectedShi
   }
 };
 
+const moveBullet = (bullet: any, direction: number) => {
+  return {
+    ...bullet,
+    y: bullet.y + (direction * BULLET_SPEED * 0.016) // 60fps
+  };
+};
+
+const isBulletOffScreen = (bullet: any, height: number) => {
+  return bullet.y < -16 || bullet.y > height; // BULLET_SIZE
+};
+
+const createBullet = (playerPos: any, isFlipped: boolean, nextId: any) => {
+  const bulletX = playerPos.x + 40 / 2 - (16 * 2) / 2; // PLAYER_SIZE / 2 - (BULLET_SIZE * 2) / 2
+  const bulletY = isFlipped ? playerPos.y + 40 : playerPos.y - 16; // PLAYER_SIZE : -BULLET_SIZE
+  const bulletDirection = isFlipped ? 1 : -1;
+  
+  return {
+    x: bulletX,
+    y: bulletY,
+    id: nextId.current++,
+    direction: bulletDirection
+  };
+};
+
+const updatePlayerPosition = (playerPos: any, velocity: any, keysPressed: Set<number>) => {
+  let targetVelX = 0;
+  let targetVelY = 0;
+  
+  // Remapped for 90-degree left rotation: up->left, right->up, down->right, left->down
+  if (keysPressed.has(19)) targetVelX -= 10; // Up becomes Left (MAX_SPEED)
+  if (keysPressed.has(20)) targetVelX += 10; // Down becomes Right  
+  if (keysPressed.has(21)) targetVelY += 10; // Left becomes Down
+  if (keysPressed.has(22)) targetVelY -= 10; // Right becomes Up
+  
+  // Apply acceleration/deceleration
+  let newVelocity = { ...velocity };
+  
+  if (targetVelX !== 0) {
+    newVelocity.x += (targetVelX - velocity.x) * 0.2; // ACCELERATION
+  } else {
+    newVelocity.x *= 0.9; // DECELERATION
+  }
+  
+  if (targetVelY !== 0) {
+    newVelocity.y += (targetVelY - velocity.y) * 0.2;
+  } else {
+    newVelocity.y *= 0.9;
+  }
+  
+  // Clean up tiny velocities
+  if (Math.abs(newVelocity.x) < 0.1) newVelocity.x = 0;
+  if (Math.abs(newVelocity.y) < 0.1) newVelocity.y = 0;
+  
+  // Update position with boundaries
+  const newPos = {
+    x: Math.max(0, Math.min(1920 - 40, playerPos.x + newVelocity.x)), // width - PLAYER_SIZE
+    y: Math.max(0, Math.min(1080 - 40, playerPos.y + newVelocity.y))  // height - PLAYER_SIZE
+  };
+  
+  return { position: newPos, velocity: newVelocity };
+};
+
 export default function App() {
   const [playerPos, setPlayerPos] = useState({
     x: width / 2 - PLAYER_SIZE / 2,
@@ -355,11 +417,9 @@ export default function App() {
     if (gameStarted && !gameOver && !gameCleared && !bulletMoveRef.current) {
       bulletMoveRef.current = setInterval(() => {
         setBullets(prevBullets => {
-          // Just move bullets, collision detection handled separately
-          return prevBullets.map(bullet => ({
-            ...bullet,
-            y: bullet.y + (BULLET_SPEED * bullet.direction * 0.08)
-          })).filter(bullet => bullet.direction === 1 ? bullet.y < height + BULLET_SIZE : bullet.y > -BULLET_SIZE);
+          return prevBullets
+            .map(bullet => moveBullet(bullet, bullet.direction))
+            .filter(bullet => !isBulletOffScreen(bullet, height));
         });
       }, 16); // 60fps smooth movement
     }
@@ -454,24 +514,15 @@ export default function App() {
       // Start continuous shooting on play/pause button (keyCode 85)
       if (keyEvent.keyCode === 85 && !shootInterval.current) {
         // Shoot immediately from tip of sprite
-        const createBullet = () => {
-          const bulletX = playerPosRef.current.x + PLAYER_SIZE / 2 - (BULLET_SIZE * 2) / 2;
-          const bulletY = isFlipped ? playerPosRef.current.y + PLAYER_SIZE : playerPosRef.current.y - BULLET_SIZE;
-          const bulletDirection = isFlipped ? 1 : -1;
-          
-          setBullets(prevBullets => [...prevBullets, {
-            x: bulletX,
-            y: bulletY,
-            id: nextId.current++,
-            direction: bulletDirection
-          }]);
+        const shootBullet = () => {
+          setBullets(prevBullets => [...prevBullets, createBullet(playerPosRef.current, isFlipped, nextId)]);
         };
 
-        createBullet(); // Shoot immediately
+        shootBullet(); // Shoot immediately
 
-        // Start continuous shooting with functional updates
+        // Start continuous shooting
         shootInterval.current = setInterval(() => {
-          createBullet();
+          shootBullet();
         }, 100); // Reduced from 150ms to 100ms for more consistent stream
       }
 
@@ -514,34 +565,9 @@ export default function App() {
     const moveInterval = setInterval(() => {
       if (!gameOver && !gameCleared) {
         setPlayerPos(prev => {
-          let targetVelX = 0;
-          let targetVelY = 0;
-          
-          // Remapped for 90-degree left rotation: up->left, right->up, down->right, left->down
-          if (keysPressed.current.has(19)) targetVelX -= MAX_SPEED; // Up becomes Left
-          if (keysPressed.current.has(20)) targetVelX += MAX_SPEED; // Down becomes Right  
-          if (keysPressed.current.has(21)) targetVelY += MAX_SPEED; // Left becomes Down
-          if (keysPressed.current.has(22)) targetVelY -= MAX_SPEED; // Right becomes Up
-          
-          if (targetVelX !== 0) {
-            velocity.current.x += (targetVelX - velocity.current.x) * ACCELERATION;
-          } else {
-            velocity.current.x *= DECELERATION;
-          }
-          
-          if (targetVelY !== 0) {
-            velocity.current.y += (targetVelY - velocity.current.y) * ACCELERATION;
-          } else {
-            velocity.current.y *= DECELERATION;
-          }
-          
-          if (Math.abs(velocity.current.x) < 0.1) velocity.current.x = 0;
-          if (Math.abs(velocity.current.y) < 0.1) velocity.current.y = 0;
-          
-          const newX = Math.max(0, Math.min(width - PLAYER_SIZE, prev.x + velocity.current.x));
-          const newY = Math.max(0, Math.min(height - PLAYER_SIZE, prev.y + velocity.current.y));
-          
-          return { x: newX, y: newY };
+          const result = updatePlayerPosition(prev, velocity.current, keysPressed.current);
+          velocity.current = result.velocity;
+          return result.position;
         });
       }
     }, 16);
