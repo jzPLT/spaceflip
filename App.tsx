@@ -226,7 +226,9 @@ export default function App() {
     setGameCleared(false);
     setScore(0);
     setIsFlipped(false);
+    setWaveTimer(0);
     velocity.current = { x: 0, y: 0 };
+    keysPressed.current.clear();
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
@@ -589,7 +591,6 @@ export default function App() {
     >
       {shipSelected && <Text style={styles.timer}>{timeLeft}s</Text>}
       {shipSelected && <Text style={styles.scoreCounter}>Score: {score}</Text>}
-      {shipSelected && <Text style={styles.waveDisplay}>Wave: {Math.floor(waveTimer / 300) % 4} ({['Light', 'Medium', 'Heavy', 'Chaos'][Math.floor(waveTimer / 300) % 4]})</Text>}
       
       {!gameStarted && !shipSelected && showShipSelector && (
         <View style={styles.shipSelectorContainer}>
