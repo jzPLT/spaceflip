@@ -11,6 +11,7 @@ interface UseKeyboardInputProps {
   isFlipped: boolean;
   selectedShip: Ship;
   isPaidUser: boolean;
+  setIsPaidUser: (paid: boolean) => void;
   shipSelectedRef: React.RefObject<boolean>;
   playerPosRef: React.RefObject<Position>;
   velocity: React.RefObject<{ x: number; y: number }>;
@@ -26,7 +27,7 @@ interface UseKeyboardInputProps {
 }
 
 export const useKeyboardInput = ({
-  gameStarted, gameOver, gameCleared, isFlipped, selectedShip, isPaidUser,
+  gameStarted, gameOver, gameCleared, isFlipped, selectedShip, isPaidUser, setIsPaidUser,
   shipSelectedRef, playerPosRef, velocity, nextId,
   resetGame, setSelectedShip, setShipSelected, setShowShipSelector,
   setGameStarted, setIsFlipped, setBullets, setPlayerPos
@@ -44,7 +45,7 @@ export const useKeyboardInput = ({
       }
 
       if (!shipSelectedRef.current) {
-        handleShipNavigation(keyEvent.keyCode, selectedShip, setSelectedShip, shipSelectedRef, setShipSelected, setShowShipSelector, isPaidUser);
+        handleShipNavigation(keyEvent.keyCode, selectedShip, setSelectedShip, shipSelectedRef, setShipSelected, setShowShipSelector, isPaidUser, setIsPaidUser);
         return;
       }
 

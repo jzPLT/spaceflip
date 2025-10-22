@@ -1,5 +1,6 @@
 import { GAME_CONSTANTS, WAVE_PATTERNS, KEY_CODES } from './constants';
 import { Enemy, Bullet, Position, Velocity, WavePattern, Ship } from './types';
+import { PaymentService } from './services/paymentService';
 
 export const getWavePattern = (waveTimer: number): WavePattern => {
   const wavePhase = Math.floor(waveTimer / 300) % 4;
@@ -50,7 +51,8 @@ export const handleShipNavigation = (
   shipSelectedRef: React.RefObject<boolean>,
   setShipSelected: (selected: boolean) => void,
   setShowShipSelector: (show: boolean) => void,
-  isPaidUser: boolean = false
+  isPaidUser: boolean = false,
+  setIsPaidUser?: (paid: boolean) => void
 ): void => {
   if (keyCode === KEY_CODES.RIGHT) { // Right -> Up (ship type)
     setSelectedShip((current: Ship) => {
@@ -83,8 +85,18 @@ export const handleShipNavigation = (
   } else if (keyCode === KEY_CODES.CENTER) { // Center - Select ship
     // Check if selecting locked content
     if (selectedShip.color === 'red' && !isPaidUser) {
-      // TODO: Trigger payment flow here
-      console.log('Payment flow would start here for red ship');
+      // Process payment
+      PaymentService.processPayment().then(success => {
+        if (success && setIsPaidUser) {
+          setIsPaidUser(true);
+          // Now allow ship selection
+          shipSelectedRef.current = true;
+          setShipSelected(true);
+          setShowShipSelector(false);
+        } else {
+          console.log('Payment failed or cancelled');
+        }
+      });
       return;
     }
     

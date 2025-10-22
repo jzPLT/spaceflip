@@ -32,6 +32,7 @@ export default function App() {
     isFlipped: gameState.isFlipped,
     selectedShip: gameState.selectedShip,
     isPaidUser: gameState.isPaidUser,
+    setIsPaidUser: gameState.setIsPaidUser,
     shipSelectedRef: gameState.shipSelectedRef,
     playerPosRef: gameState.playerPosRef,
     velocity: gameState.velocity,

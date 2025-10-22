@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { GAME_CONSTANTS } from '../constants';
 import { Position, Velocity, Enemy, Bullet, Ship } from '../types';
+import { PaymentService } from '../services/paymentService';
 
 export const useGameState = () => {
   const [playerPos, setPlayerPos] = useState<Position>({
@@ -46,6 +47,11 @@ export const useGameState = () => {
     setWaveTimer(0);
     velocity.current = { x: 0, y: 0 };
   };
+
+  // Load payment status on app start
+  useEffect(() => {
+    PaymentService.checkPaymentStatus().then(setIsPaidUser);
+  }, []);
 
   return {
     // State
