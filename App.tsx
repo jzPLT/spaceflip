@@ -34,14 +34,14 @@ const BULLET_SPEED = 288; // Increased from 96 to 288 (3x faster)
 
 // Helper functions
 const getWavePattern = (waveTimer: number) => {
-  const wavePhase = Math.floor(waveTimer / 180) % 4;
+  const wavePhase = Math.floor(waveTimer / 300) % 4; // 5 seconds per wave (300 frames at 60fps)
   
   switch(wavePhase) {
-    case 0: return { spawnChance: 0.15, enemyCount: 3, enemyType: 'normal' };
-    case 1: return { spawnChance: 0.15, enemyCount: 2, enemyType: 'fast' };
-    case 2: return { spawnChance: 0.18, enemyCount: 4, enemyType: 'meteor' };
-    case 3: return { spawnChance: 0.20, enemyCount: 5, enemyType: 'mixed' };
-    default: return { spawnChance: 0.15, enemyCount: 2, enemyType: 'normal' };
+    case 0: return { spawnChance: 0.15, enemyCount: 3, meteorChance: 0.2, fastChance: 0.15 }; // Light wave
+    case 1: return { spawnChance: 0.18, enemyCount: 4, meteorChance: 0.3, fastChance: 0.25 }; // Medium wave  
+    case 2: return { spawnChance: 0.22, enemyCount: 5, meteorChance: 0.4, fastChance: 0.35 }; // Heavy wave
+    case 3: return { spawnChance: 0.25, enemyCount: 6, meteorChance: 0.5, fastChance: 0.4 };  // Chaos wave
+    default: return { spawnChance: 0.15, enemyCount: 3, meteorChance: 0.2, fastChance: 0.15 };
   }
 };
 
@@ -304,15 +304,15 @@ export default function App() {
       // Main game loop for spawning and collision detection
       intervalRef.current = setInterval(() => {
         // Wave-based enemy spawning
-        setWaveTimer(prev => prev + 1);
-        
-        setEnemies(prev => {
-          const currentEnemies = [...prev];
-          const pattern = getWavePattern(waveTimer);
+        setWaveTimer(prev => {
+          const newTimer = prev + 1;
           
-          if (Math.random() < pattern.spawnChance && currentEnemies.length < 35) {
-            const newEnemies = [];
-            const numEnemies = Math.floor(Math.random() * 2) + pattern.enemyCount;
+          setEnemies(currentEnemies => {
+            const pattern = getWavePattern(newTimer);
+            
+            if (Math.random() < pattern.spawnChance && currentEnemies.length < 35) {
+              const newEnemies = [];
+              const numEnemies = Math.floor(Math.random() * 2) + pattern.enemyCount;
             const MIN_SPACING = ENEMY_SIZE + 15;
             
             for (let i = 0; i < numEnemies; i++) {
@@ -323,17 +323,9 @@ export default function App() {
               while (!validPosition && attempts < 100) {
                 x = Math.random() * (width - ENEMY_SIZE);
                 
-                // Wave-based enemy type determination
-                let isMeteor = false;
-                if (pattern.enemyType === 'meteor') {
-                  isMeteor = true;
-                  y = height;
-                } else if (pattern.enemyType === 'mixed') {
-                  isMeteor = Math.random() < 0.5;
-                  y = isMeteor ? height : -ENEMY_SIZE;
-                } else {
-                  y = -ENEMY_SIZE;
-                }
+                // Mixed enemy type determination based on wave pattern
+                const isMeteor = Math.random() < pattern.meteorChance;
+                y = isMeteor ? height : -ENEMY_SIZE;
                 
                 const allEnemies = [...currentEnemies, ...newEnemies];
                 validPosition = true;
@@ -349,8 +341,8 @@ export default function App() {
               }
               
               if (validPosition) {
-                const isFast = pattern.enemyType === 'fast' || (pattern.enemyType === 'mixed' && Math.random() < 0.4);
                 const isMeteor = y === height;
+                const isFast = !isMeteor && Math.random() < pattern.fastChance;
                 
                 // Meteor-specific properties
                 const rotation = isMeteor ? Math.random() * 360 : 0;
@@ -376,6 +368,9 @@ export default function App() {
           
           return currentEnemies;
         });
+        
+        return newTimer;
+      });
 
         // No bullet collision handling here - moved to separate loop
         setBullets(prevBullets => {
@@ -594,6 +589,7 @@ export default function App() {
     >
       {shipSelected && <Text style={styles.timer}>{timeLeft}s</Text>}
       {shipSelected && <Text style={styles.scoreCounter}>Score: {score}</Text>}
+      {shipSelected && <Text style={styles.waveDisplay}>Wave: {Math.floor(waveTimer / 300) % 4} ({['Light', 'Medium', 'Heavy', 'Chaos'][Math.floor(waveTimer / 300) % 4]})</Text>}
       
       {!gameStarted && !shipSelected && showShipSelector && (
         <View style={styles.shipSelectorContainer}>
@@ -723,6 +719,15 @@ const styles = StyleSheet.create({
     right: 20,
     color: '#ffff00',
     fontSize: 24,
+    fontWeight: 'bold',
+    zIndex: 100,
+  },
+  waveDisplay: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    color: '#00ff00',
+    fontSize: 18,
     fontWeight: 'bold',
     zIndex: 100,
   },
