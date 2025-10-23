@@ -19,9 +19,9 @@ export const useGameState = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [selectedShip, setSelectedShip] = useState<Ship>({ type: 1, color: 'blue' });
   const [showShipSelector, setShowShipSelector] = useState(true);
-  const [shipSelected, setShipSelected] = useState(false);
   const [waveTimer, setWaveTimer] = useState(0);
   const [isPaidUser, setIsPaidUser] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(true);
   
   const shipSelectedRef = useRef(false);
   const velocity = useRef<Velocity>({ x: 0, y: 0 });
@@ -36,7 +36,6 @@ export const useGameState = () => {
     setEnemies([]);
     setBullets([]);
     setGameStarted(false);
-    setShipSelected(false);
     shipSelectedRef.current = false;
     setShowShipSelector(true);
     setTimeLeft(GAME_CONSTANTS.GAME_DURATION);
@@ -50,7 +49,10 @@ export const useGameState = () => {
 
   // Load payment status on app start
   useEffect(() => {
-    PaymentService.checkPaymentStatus().then(setIsPaidUser);
+    PaymentService.checkPaymentStatus().then(paid => {
+      setIsPaidUser(paid);
+      setPaymentLoading(false);
+    });
   }, []);
 
   return {
@@ -66,9 +68,9 @@ export const useGameState = () => {
     isFlipped, setIsFlipped,
     selectedShip, setSelectedShip,
     showShipSelector, setShowShipSelector,
-    shipSelected, setShipSelected,
     waveTimer, setWaveTimer,
     isPaidUser, setIsPaidUser,
+    paymentLoading,
     
     // Refs
     shipSelectedRef,

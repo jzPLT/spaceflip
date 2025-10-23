@@ -39,7 +39,6 @@ export default function App() {
     nextId: gameState.nextId,
     resetGame: resetGameWithCleanup,
     setSelectedShip: gameState.setSelectedShip,
-    setShipSelected: gameState.setShipSelected,
     setShowShipSelector: gameState.setShowShipSelector,
     setGameStarted: gameState.setGameStarted,
     setIsFlipped: gameState.setIsFlipped,
@@ -54,6 +53,11 @@ export default function App() {
     playerPosRef: gameState.playerPosRef
   });
 
+  // Don't render until payment status is loaded
+  if (gameState.paymentLoading) {
+    return null;
+  }
+
   return (
     <ImageBackground 
       source={GAME_ASSETS.background}
@@ -66,16 +70,16 @@ export default function App() {
         gameOver={gameState.gameOver}
         gameCleared={gameState.gameCleared}
         gameStarted={gameState.gameStarted}
-        shipSelected={gameState.shipSelected}
+        shipSelected={gameState.shipSelectedRef.current}
       />
       
       <ShipSelector 
         selectedShip={gameState.selectedShip}
-        visible={!gameState.gameStarted && !gameState.shipSelected && gameState.showShipSelector}
+        visible={!gameState.gameStarted && !gameState.shipSelectedRef.current && gameState.showShipSelector}
         isPaidUser={gameState.isPaidUser}
       />
 
-      {!gameState.gameStarted && !gameState.shipSelected && (
+      {!gameState.gameStarted && !gameState.shipSelectedRef.current && (
         <Text style={styles.rotateInstruction}>Rotate remote sideways</Text>
       )}
       
@@ -85,7 +89,7 @@ export default function App() {
         isFlipped={gameState.isFlipped}
         enemies={gameState.enemies}
         bullets={gameState.bullets}
-        shipSelected={gameState.shipSelected}
+        shipSelected={gameState.shipSelectedRef.current}
       />
     </ImageBackground>
   );

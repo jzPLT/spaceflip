@@ -49,7 +49,6 @@ export const handleShipNavigation = (
   selectedShip: Ship, 
   setSelectedShip: (ship: Ship | ((prev: Ship) => Ship)) => void,
   shipSelectedRef: React.RefObject<boolean>,
-  setShipSelected: (selected: boolean) => void,
   setShowShipSelector: (show: boolean) => void,
   isPaidUser: boolean = false,
   setIsPaidUser?: (paid: boolean) => void
@@ -91,7 +90,6 @@ export const handleShipNavigation = (
           setIsPaidUser(true);
           // Now allow ship selection
           shipSelectedRef.current = true;
-          setShipSelected(true);
           setShowShipSelector(false);
         } else {
           console.log('Payment failed or cancelled');
@@ -101,7 +99,6 @@ export const handleShipNavigation = (
     }
     
     shipSelectedRef.current = true;
-    setShipSelected(true);
     setShowShipSelector(false);
   }
 };
