@@ -6,6 +6,7 @@ import { handleShipNavigation, createBullet, updatePlayerPosition } from '../gam
 
 interface UseKeyboardInputProps {
   gameStarted: boolean;
+  gamePaused: boolean;
   gameOver: boolean;
   gameCleared: boolean;
   isFlipped: boolean;
@@ -20,16 +21,17 @@ interface UseKeyboardInputProps {
   setSelectedShip: (ship: Ship | ((prev: Ship) => Ship)) => void;
   setShowShipSelector: (show: boolean) => void;
   setGameStarted: (started: boolean) => void;
+  setGamePaused: (paused: boolean) => void;
   setIsFlipped: (flipped: boolean) => void;
   setBullets: (fn: (prev: any[]) => any[]) => void;
   setPlayerPos: (fn: (prev: Position) => Position) => void;
 }
 
 export const useKeyboardInput = ({
-  gameStarted, gameOver, gameCleared, isFlipped, selectedShip, isPaidUser, setIsPaidUser,
+  gameStarted, gamePaused, gameOver, gameCleared, isFlipped, selectedShip, isPaidUser, setIsPaidUser,
   shipSelectedRef, playerPosRef, velocity, nextId,
   resetGame, setSelectedShip, setShowShipSelector,
-  setGameStarted, setIsFlipped, setBullets, setPlayerPos
+  setGameStarted, setGamePaused, setIsFlipped, setBullets, setPlayerPos
 }: UseKeyboardInputProps) => {
   const keysPressed = useRef<Set<number>>(new Set());
   const shootInterval = useRef<NodeJS.Timeout | null>(null);
@@ -45,6 +47,17 @@ export const useKeyboardInput = ({
 
       if (!shipSelectedRef.current) {
         handleShipNavigation(keyEvent.keyCode, selectedShip, setSelectedShip, shipSelectedRef, setShowShipSelector, isPaidUser, setIsPaidUser);
+        return;
+      }
+
+      // Handle pause/resume during gameplay
+      if (keyEvent.keyCode === KEY_CODES.CENTER && gameStarted) {
+        setGamePaused(prev => !prev);
+        return;
+      }
+
+      // Don't process other inputs when paused
+      if (gamePaused) {
         return;
       }
 
@@ -73,6 +86,11 @@ export const useKeyboardInput = ({
     };
 
     const handleKeyUp = (keyEvent: { keyCode: number }) => {
+      // Don't process keyUp when paused
+      if (gamePaused) {
+        return;
+      }
+      
       keysPressed.current.delete(keyEvent.keyCode);
 
       if (keyEvent.keyCode === KEY_CODES.PLAY_PAUSE && shootInterval.current) {
@@ -92,12 +110,12 @@ export const useKeyboardInput = ({
         shootInterval.current = null;
       }
     };
-  }, [gameStarted, gameOver, gameCleared, isFlipped, selectedShip]);
+  }, [gameStarted, gamePaused, gameOver, gameCleared, isFlipped, selectedShip]);
 
   // Player movement
   useEffect(() => {
     const moveInterval = setInterval(() => {
-      if (!gameOver && !gameCleared) {
+      if (!gamePaused && !gameOver && !gameCleared) {
         setPlayerPos(prev => {
           const result = updatePlayerPosition(prev, velocity.current, keysPressed.current);
           velocity.current = result.velocity;
@@ -107,7 +125,7 @@ export const useKeyboardInput = ({
     }, 16);
 
     return () => clearInterval(moveInterval);
-  }, [gameOver, gameCleared]);
+  }, [gamePaused, gameOver, gameCleared]);
 
   return { keysPressed };
 };

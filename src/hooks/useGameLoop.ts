@@ -5,6 +5,7 @@ import { getWavePattern, moveEnemy, isEnemyOffScreen, moveBullet, isBulletOffScr
 
 interface UseGameLoopProps {
   gameStarted: boolean;
+  gamePaused: boolean;
   gameOver: boolean;
   gameCleared: boolean;
   setTimeLeft: (fn: (prev: number) => number) => void;
@@ -17,7 +18,7 @@ interface UseGameLoopProps {
 }
 
 export const useGameLoop = ({
-  gameStarted, gameOver, gameCleared,
+  gameStarted, gamePaused, gameOver, gameCleared,
   setTimeLeft, setGameCleared, setWaveTimer, setEnemies, setBullets, setScore, nextId
 }: UseGameLoopProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -34,9 +35,16 @@ export const useGameLoop = ({
     });
   };
 
+  // Clear intervals when paused, restart when unpaused
+  useEffect(() => {
+    if (gamePaused) {
+      clearIntervals();
+    }
+  }, [gamePaused]);
+
   // Timer countdown
   useEffect(() => {
-    if (gameStarted && !gameOver && !gameCleared && !timerRef.current) {
+    if (gameStarted && !gamePaused && !gameOver && !gameCleared && !timerRef.current) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -54,11 +62,11 @@ export const useGameLoop = ({
         timerRef.current = null;
       }
     };
-  }, [gameStarted, gameOver, gameCleared]);
+  }, [gameStarted, gamePaused, gameOver, gameCleared]);
 
   // Main game loop
   useEffect(() => {
-    if (gameStarted && !gameOver && !gameCleared && !intervalRef.current) {
+    if (gameStarted && !gamePaused && !gameOver && !gameCleared && !intervalRef.current) {
       intervalRef.current = setInterval(() => {
         setWaveTimer(prev => {
           const newTimer = prev + 1;
@@ -80,11 +88,11 @@ export const useGameLoop = ({
         intervalRef.current = null;
       }
     };
-  }, [gameStarted, gameOver, gameCleared]);
+  }, [gameStarted, gamePaused, gameOver, gameCleared]);
 
   // Enemy movement
   useEffect(() => {
-    if (gameStarted && !gameOver && !gameCleared && !enemyMoveRef.current) {
+    if (gameStarted && !gamePaused && !gameOver && !gameCleared && !enemyMoveRef.current) {
       enemyMoveRef.current = setInterval(() => {
         setEnemies(prev => prev.map(moveEnemy).filter(enemy => !isEnemyOffScreen(enemy)));
       }, 16);
@@ -96,11 +104,11 @@ export const useGameLoop = ({
         enemyMoveRef.current = null;
       }
     };
-  }, [gameStarted, gameOver, gameCleared]);
+  }, [gameStarted, gamePaused, gameOver, gameCleared]);
 
   // Bullet movement
   useEffect(() => {
-    if (gameStarted && !gameOver && !gameCleared && !bulletMoveRef.current) {
+    if (gameStarted && !gamePaused && !gameOver && !gameCleared && !bulletMoveRef.current) {
       bulletMoveRef.current = setInterval(() => {
         setBullets(prev => prev.map(moveBullet).filter(bullet => !isBulletOffScreen(bullet)));
       }, 16);
@@ -112,11 +120,11 @@ export const useGameLoop = ({
         bulletMoveRef.current = null;
       }
     };
-  }, [gameStarted, gameOver, gameCleared]);
+  }, [gameStarted, gamePaused, gameOver, gameCleared]);
 
   // Collision detection
   useEffect(() => {
-    if (gameStarted && !gameOver && !gameCleared) {
+    if (gameStarted && !gamePaused && !gameOver && !gameCleared) {
       const collisionInterval = setInterval(() => {
         let hitBulletIds = new Set<number>();
         
@@ -154,7 +162,7 @@ export const useGameLoop = ({
 
       return () => clearInterval(collisionInterval);
     }
-  }, [gameStarted, gameOver, gameCleared]);
+  }, [gameStarted, gamePaused, gameOver, gameCleared]);
 
   return { clearIntervals };
 };

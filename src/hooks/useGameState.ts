@@ -12,6 +12,7 @@ export const useGameState = () => {
   const [enemies, setEnemies] = useState<Enemy[]>([]);
   const [bullets, setBullets] = useState<Bullet[]>([]);
   const [gameStarted, setGameStarted] = useState(false);
+  const [gamePaused, setGamePaused] = useState(false);
   const [timeLeft, setTimeLeft] = useState(GAME_CONSTANTS.GAME_DURATION);
   const [gameOver, setGameOver] = useState(false);
   const [gameCleared, setGameCleared] = useState(false);
@@ -36,6 +37,7 @@ export const useGameState = () => {
     setEnemies([]);
     setBullets([]);
     setGameStarted(false);
+    setGamePaused(false);
     shipSelectedRef.current = false;
     setShowShipSelector(true);
     setTimeLeft(GAME_CONSTANTS.GAME_DURATION);
@@ -61,6 +63,7 @@ export const useGameState = () => {
     enemies, setEnemies,
     bullets, setBullets,
     gameStarted, setGameStarted,
+    gamePaused, setGamePaused,
     timeLeft, setTimeLeft,
     gameOver, setGameOver,
     gameCleared, setGameCleared,

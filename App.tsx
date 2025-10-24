@@ -1,14 +1,15 @@
 import React from 'react';
 import { StyleSheet, ImageBackground, Text } from 'react-native';
 import { GAME_ASSETS } from './src/assets';
-import { ShipSelector, GameUI, GameEntities } from './src/components';
-import { useGameState, useGameLoop, useKeyboardInput, useCollisionDetection } from './src/hooks';
+import { ShipSelector, GameUI, GameEntities, PauseOverlay } from './src/components';
+import { useGameState, useGameLoop, useKeyboardInput, useCollisionDetection, useAlexaVoice } from './src/hooks';
 
 export default function App() {
   const gameState = useGameState();
   
   const { clearIntervals } = useGameLoop({
     gameStarted: gameState.gameStarted,
+    gamePaused: gameState.gamePaused,
     gameOver: gameState.gameOver,
     gameCleared: gameState.gameCleared,
     setTimeLeft: gameState.setTimeLeft,
@@ -27,6 +28,7 @@ export default function App() {
 
   useKeyboardInput({
     gameStarted: gameState.gameStarted,
+    gamePaused: gameState.gamePaused,
     gameOver: gameState.gameOver,
     gameCleared: gameState.gameCleared,
     isFlipped: gameState.isFlipped,
@@ -41,6 +43,7 @@ export default function App() {
     setSelectedShip: gameState.setSelectedShip,
     setShowShipSelector: gameState.setShowShipSelector,
     setGameStarted: gameState.setGameStarted,
+    setGamePaused: gameState.setGamePaused,
     setIsFlipped: gameState.setIsFlipped,
     setBullets: gameState.setBullets,
     setPlayerPos: gameState.setPlayerPos
@@ -51,6 +54,18 @@ export default function App() {
     enemies: gameState.enemies,
     resetGame: resetGameWithCleanup,
     playerPosRef: gameState.playerPosRef
+  });
+
+  useAlexaVoice({
+    gameStarted: gameState.gameStarted,
+    gamePaused: gameState.gamePaused,
+    gameOver: gameState.gameOver,
+    gameCleared: gameState.gameCleared,
+    shipSelectedRef: gameState.shipSelectedRef,
+    resetGame: resetGameWithCleanup,
+    setGameStarted: gameState.setGameStarted,
+    setGamePaused: gameState.setGamePaused,
+    setShowShipSelector: gameState.setShowShipSelector
   });
 
   // Don't render until payment status is loaded
@@ -91,6 +106,8 @@ export default function App() {
         bullets={gameState.bullets}
         shipSelected={gameState.shipSelectedRef.current}
       />
+
+      <PauseOverlay visible={gameState.gamePaused} />
     </ImageBackground>
   );
 }
