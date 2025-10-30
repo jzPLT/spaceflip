@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ship } from '../types';
 import { SHIP_ASSETS } from '../assets';
 import { LockOverlay } from './LockOverlay';
+import { FeatureFlags } from '../services/FeatureFlags';
 
 interface ShipSelectorProps {
   selectedShip: Ship;
@@ -20,7 +21,7 @@ export const ShipSelector: React.FC<ShipSelectorProps> = ({ selectedShip, visibl
         {[1, 2, 3].map(type => (
           <View key={type} style={styles.typeRow}>
             {['blue', 'green', 'orange', 'red'].map(color => {
-              const isLocked = color === 'red' && !isPaidUser;
+              const isLocked = color === 'red' && !isPaidUser && FeatureFlags.isEnabled('inAppPayments');
               return (
                 <View 
                   key={`${type}-${color}`} 

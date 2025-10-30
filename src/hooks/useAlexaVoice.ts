@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AlexaVoiceService, VoiceCommand } from '../services/AlexaVoiceService';
+import { FeatureFlags } from '../services/FeatureFlags';
 
 interface UseAlexaVoiceProps {
   gameStarted: boolean;
@@ -27,6 +28,11 @@ export const useAlexaVoice = ({
   
   useEffect(() => {
     const initializeVoice = async () => {
+      if (!FeatureFlags.isEnabled('voiceCommands')) {
+        console.log('Voice commands disabled by feature flag');
+        return;
+      }
+
       const success = await AlexaVoiceService.initialize();
       if (success) {
         console.log('Alexa Voice Service initialized');
@@ -97,7 +103,7 @@ export const useAlexaVoice = ({
 
   // Update voice listening based on game state
   useEffect(() => {
-    if (gameStarted) {
+    if (gameStarted && FeatureFlags.isEnabled('voiceCommands')) {
       AlexaVoiceService.startListening();
     }
   }, [gameStarted, gameOver, gameCleared]);

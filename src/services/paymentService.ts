@@ -1,5 +1,6 @@
 import DeviceInfo from 'react-native-device-info';
 import { AmazonIAPService } from './AmazonIAP';
+import { FeatureFlags } from './FeatureFlags';
 
 const API_BASE = 'https://xjxlcj4rxa.execute-api.us-east-1.amazonaws.com/prod';
 
@@ -8,7 +9,7 @@ export class PaymentService {
   private static initialized = false;
 
   static async initialize(): Promise<void> {
-    if (!this.initialized) {
+    if (!this.initialized && FeatureFlags.isEnabled('inAppPayments')) {
       await AmazonIAPService.initialize();
       this.initialized = true;
     }
@@ -22,6 +23,10 @@ export class PaymentService {
   }
 
   static async checkPaymentStatus(): Promise<boolean> {
+    if (!FeatureFlags.isEnabled('inAppPayments')) {
+      return true; // Grant access when payments disabled
+    }
+
     try {
       const deviceId = await this.getDeviceId();
       const response = await fetch(`${API_BASE}/payments/${deviceId}`);
@@ -34,6 +39,10 @@ export class PaymentService {
   }
 
   static async processPayment(): Promise<boolean> {
+    if (!FeatureFlags.isEnabled('inAppPayments')) {
+      return true; // Always succeed when payments disabled
+    }
+
     try {
       await this.initialize();
       
