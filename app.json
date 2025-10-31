@@ -24,13 +24,13 @@
       "splash": {
         "image": "./assets/images/icon-1920x720.png"
       },
-      "package": "com.jeffzhzh.spaceflip"
+      "package": "com.jeffzhzh.spaceflip.firetv"
     },
     "ios": {
       "splash": {
         "image": "./assets/images/icon-1920x720.png"
       },
-      "bundleIdentifier": "com.jeffzhzh.FireTVDemo"
+      "bundleIdentifier": "com.jeffzhzh.spaceflip.firetv"
     },
     "newArchEnabled": true,
     "name": "Spaceflip",
